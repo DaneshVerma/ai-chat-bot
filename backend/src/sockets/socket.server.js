@@ -1,7 +1,7 @@
 const { Server } = require("socket.io");
 const cookie = require("cookie");
 const jwt = require("jsonwebtoken");
-
+const aiService = require("../services/ai.service");
 function initSocket(httpServer) {
   const io = new Server(httpServer);
 
@@ -26,7 +26,10 @@ function initSocket(httpServer) {
         return next(new Error("Invalid token"));
       }
     });
-
+    socket.on("ai-message", async (message) => {
+      const response = await aiService.generateResult(message);
+      socket.emit("ai-response", response);
+    });
     socket.on("disconnect", () => {
       console.log("A user disconnected");
     });
