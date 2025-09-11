@@ -27,8 +27,11 @@ function initSocket(httpServer) {
       }
     });
     socket.on("ai-message", async (message) => {
-      const response = await aiService.generateResult(message);
-      socket.emit("ai-response", response);
+      // const response = await aiService.generateResult(message);
+      // socket.emit("ai-response", response);
+      aiService.generateStreamResponse(message, (chunk) => {
+        socket.emit("ai-response", chunk);
+      });
     });
     socket.on("disconnect", () => {
       console.log("A user disconnected");
