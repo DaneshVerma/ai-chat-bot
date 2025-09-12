@@ -2,6 +2,9 @@ const { Server } = require("socket.io");
 const cookie = require("cookie");
 const jwt = require("jsonwebtoken");
 const aiService = require("../services/ai.service");
+const messageModel = require("../models/message.model");
+
+
 function initSocket(httpServer) {
   const io = new Server(httpServer);
 
@@ -9,7 +12,6 @@ function initSocket(httpServer) {
     console.log("A user connected");
     io.use((socket, next) => {
       const cookies = socket.handshake.headers.cookie;
-
       const { token } = cookies ? cookie.parse(cookies) : {};
 
       if (!token) {
@@ -18,7 +20,6 @@ function initSocket(httpServer) {
 
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
         socket.user = decoded;
 
         next();
@@ -27,8 +28,6 @@ function initSocket(httpServer) {
       }
     });
     socket.on("ai-message", async (message) => {
-      // const response = await aiService.generateResult(message);
-      // socket.emit("ai-response", response);
       aiService.generateStreamResponse(message, (chunk) => {
         socket.emit("ai-response", chunk);
       });
