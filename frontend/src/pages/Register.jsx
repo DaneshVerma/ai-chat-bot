@@ -76,7 +76,7 @@ export default function Register() {
       .post(
         "http://localhost:3000/api/auth/register",
         {
-          username: form.username,
+          userName: form.username,
           email: form.email,
           fullName: {
             firstName: form.firstName,

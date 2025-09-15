@@ -10,7 +10,7 @@ async function registerUser(req, res) {
     password,
     fullName: { firstName, lastName },
   } = req.body;
-
+  console.log(userName, email, password, firstName, lastName);
   const isUserAlreadyExists = await userModel.findOne({
     $or: [{ userName }, { email }],
   });

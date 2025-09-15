@@ -12,5 +12,6 @@ router.post(
   validation.createChatValidation,
   chatController.createChat
 );
+router.get("/", authMiddleware.authUser, chatController.getUserChats);
 
 module.exports = router;

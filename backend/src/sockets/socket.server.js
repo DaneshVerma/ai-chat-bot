@@ -3,9 +3,15 @@ const cookie = require("cookie");
 const jwt = require("jsonwebtoken");
 const aiService = require("../services/ai.service");
 const { messageModel } = require("../models/message.model");
+const { v4: uuidv4 } = require("uuid");
 
 function initSocket(httpServer) {
-  const io = new Server(httpServer);
+  const io = new Server(httpServer, {
+    cors: {
+      origin: "http://localhost:5173", // Adjust this to your frontend's origin
+      credentials: true,
+    },
+  });
   io.use((socket, next) => {
     const cookies = socket.handshake.headers.cookie;
     const { token } = cookies ? cookie.parse(cookies) : {};
@@ -28,6 +34,7 @@ function initSocket(httpServer) {
     console.log("A user connected");
 
     socket.on("ai-message", async (payload) => {
+      const messageId = uuidv4();
       await messageModel.create({
         chat: payload.chat,
         user: socket.user.id,
@@ -50,8 +57,12 @@ function initSocket(httpServer) {
       });
       const response = await aiService.generateStreamResponse(
         history,
-        (chunk) => {
-          socket.emit("ai-response", chunk);
+        (text) => {
+          socket.emit("ai-response", {
+            _id: messageId,
+            chat: payload.chat,
+            text,
+          });
         }
       );
       await messageModel.create({
