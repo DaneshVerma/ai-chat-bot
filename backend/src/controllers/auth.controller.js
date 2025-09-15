@@ -1,119 +1,121 @@
 const userModel = require("../models/user.model");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const redis = require("../db/redis");
+const redis = require("../db/redis")
 
 async function registerUser(req, res) {
-  const {
-    userName,
-    email,
-    password,
-    fullName: { firstName, lastName },
-  } = req.body;
-  console.log(userName, email, password, firstName, lastName);
-  const isUserAlreadyExists = await userModel.findOne({
-    $or: [{ userName }, { email }],
-  });
 
-  if (isUserAlreadyExists) {
-    return res.status(422).json({
-      message: "User already exists",
-    });
-  }
+    const { username, email, password, fullName: { firstName, lastName } } = req.body;
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+    const isUserAlreadyExists = await userModel.findOne({
+        $or: [
+            { username },
+            { email }
+        ]
+    })
 
-  const user = await userModel.create({
-    userName,
-    email,
-    password: hashedPassword,
-    fullName: {
-      firstName,
-      lastName,
-    },
-  });
+    if (isUserAlreadyExists) {
+        return res.status(422).json({
+            message: "User already exists"
+        })
+    }
 
-  const token = jwt.sign(
-    {
-      id: user._id,
-      role: user.role,
-    },
-    process.env.JWT_SECRET
-  );
+    const hashedPassword = await bcrypt.hash(password, 10);
 
-  res.cookie("token", token);
+    const user = await userModel.create({
+        username,
+        email,
+        password: hashedPassword,
+        fullName: {
+            firstName,
+            lastName
+        }
+    })
 
-  res.status(201).json({
-    message: "User registered successfully",
-    user: {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role,
-    },
-  });
+    const token = jwt.sign({
+        id: user._id,
+        role: user.role
+    }, process.env.JWT_SECRET)
+
+
+    res.cookie("token", token)
+
+    res.status(201).json({
+        message: "User registered successfully",
+        user: {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            fullName: user.fullName,
+            role: user.role
+        }
+    })
+
 }
 
 async function loginUser(req, res) {
-  const { email, password } = req.body;
 
-  const user = await userModel.findOne({
-    email,
-  });
+    const { email, password } = req.body;
 
-  if (!user) {
-    return res.status(401).json({
-      message: "Invalid credentials",
-    });
-  }
+    const user = await userModel.findOne({
+        email
+    })
 
-  const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!user) {
+        return res.status(401).json({
+            message: "Invalid credentials"
+        })
+    }
 
-  if (!isPasswordValid) {
-    return res.status(401).json({
-      message: "Invalid credentials",
-    });
-  }
+    const isPasswordValid = await bcrypt.compare(password, user.password);
 
-  const token = jwt.sign(
-    {
-      id: user._id,
-      role: user.role,
-    },
-    process.env.JWT_SECRET
-  );
+    if (!isPasswordValid) {
+        return res.status(401).json({
+            message: "Invalid credentials"
+        })
+    }
 
-  res.cookie("token", token);
+    const token = jwt.sign({
+        id: user._id,
+        role: user.role
+    }, process.env.JWT_SECRET)
 
-  res.status(200).json({
-    message: "User logged in successfully",
-    user: {
-      id: user._id,
-      username: user.username,
-      email: user.email,
-      fullName: user.fullName,
-      role: user.role,
-    },
-  });
+
+    res.cookie("token", token)
+
+
+    res.status(200).json({
+        message: "User logged in successfully",
+        user: {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            fullName: user.fullName,
+            role: user.role
+        }
+    })
+
+
 }
 
 async function logout(req, res) {
-  const token = req.cookies.token;
 
-  if (token) {
-    await redis.set(`blacklist:${token}`, "true", "EX", 60 * 60 * 24);
-  }
+    const token = req.cookies.token
 
-  res.clearCookie("token");
+    if (token) {
+        await redis.set(`blacklist:${token}`, "true", "EX", 60 * 60 * 24)
+    }
 
-  res.status(200).json({
-    message: "User logged out successfully",
-  });
+    res.clearCookie("token")
+
+    res.status(200).json({
+        message: "User logged out successfully"
+    })
+
 }
 
 module.exports = {
-  registerUser,
-  loginUser,
-  logout,
-};
+    registerUser,
+    loginUser,
+    logout
+}
