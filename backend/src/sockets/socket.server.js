@@ -9,7 +9,7 @@ const { HumanMessage, AIMessage } = require("@langchain/core/messages");
 function initSocket(httpServer) {
   const io = new Server(httpServer, {
     cors: {
-      origin: "http://localhost:5173", // Adjust this to your frontend's origin
+      origin: "http://localhost:5173",
       credentials: true,
     },
   });

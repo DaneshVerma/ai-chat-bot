@@ -1,5 +1,7 @@
 const { ChatGoogleGenerativeAI } = require("@langchain/google-genai");
-
+const { tool } = require("@langchain/core/tools");
+const { tavily } = require("@tavily/core");
+const { z } = require("zod");
 
 const ai = new ChatGoogleGenerativeAI({
   model: "gemini-2.0-flash",
@@ -29,6 +31,21 @@ async function generateStream(prompt, onData) {
 
   return result;
 }
+
+const searchTool = tool(
+  async ({ input = "" }) => {
+    const result = await tavily.search(input);
+    return result.results;
+  },
+  {
+    name: "serachTool",
+    description:
+      "useful for when you need to answer questions about current events or the state of the world. Input should be a fully formed question.",
+    schema: z.object({
+      input: z.string().min(1),
+    }),
+  }
+);
 
 module.exports = {
   generateResult,
