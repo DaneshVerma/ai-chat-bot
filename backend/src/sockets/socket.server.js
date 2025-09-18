@@ -1,87 +1,81 @@
-const { Server } = require("socket.io")
-const cookie = require("cookie")
-const jwt = require("jsonwebtoken")
-const aiService = require("../services/ai.service")
-const messageModel = require("../models/message.model")
-const { v4: uuidv4 } = require("uuid")
-
+const { Server } = require("socket.io");
+const cookie = require("cookie");
+const jwt = require("jsonwebtoken");
+const aiService = require("../services/ai.service");
+const messageModel = require("../models/message.model");
+const { v4: uuidv4 } = require("uuid");
+const { HumanMessage, AIMessage } = require("@langchain/core/messages");
 
 function initSocket(httpServer) {
-    const io = new Server(httpServer, {
-        cors: {
-            origin: 'http://localhost:5173', // Adjust this to your frontend's origin
-            credentials: true,
-        }
-    })
+  const io = new Server(httpServer, {
+    cors: {
+      origin: "http://localhost:5173", // Adjust this to your frontend's origin
+      credentials: true,
+    },
+  });
 
+  io.use((socket, next) => {
+    const cookies = socket.handshake.headers.cookie;
 
-    io.use((socket, next) => {
+    const { token } = cookies ? cookie.parse(cookies) : {};
 
-        const cookies = socket.handshake.headers.cookie
+    if (!token) {
+      return next(new Error("Authentication error"));
+    }
 
-        const { token } = cookies ? cookie.parse(cookies) : {}
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        if (!token) {
-            return next(new Error("Authentication error"))
-        }
+      socket.user = decoded;
 
-        try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET)
+      next();
+    } catch (err) {
+      return next(new Error("Invalid token"));
+    }
+  });
 
-            socket.user = decoded
+  io.on("connection", (socket) => {
+    console.log("A user connected");
 
-            next()
-        } catch (err) {
-            return next(new Error("Invalid token"))
-        }
+    console.log(socket.user);
 
-    })
+    socket.on("ai-message", async (message) => {
+      const messageId = uuidv4();
 
-    io.on("connection", (socket) => {
-        console.log("A user connected")
+      await messageModel.create({
+        chat: message.chat,
+        user: socket.user.id,
+        role: "user",
+        text: message.text,
+      });
 
-        console.log(socket.user)
-
-        socket.on("ai-message", async (message) => {
-
-            const messageId = uuidv4()
-
-            await messageModel.create({
-                chat: message.chat,
-                user: socket.user.id,
-                role: "user",
-                text: message.text
-            })
-
-            const history = (await messageModel.find({
-                chat: message.chat
-            })).map(message => ({
-                role: message.role,
-                parts: [ {
-                    text: message.text
-                } ]
-            }))
-
-
-            const result = await aiService.generateStream(history, (text) => {
-                socket.emit("ai-response", {
-                    _id: messageId,
-                    chat: message.chat,
-                    text
-                })
-            })
-
-            await messageModel.create({
-                chat: message.chat,
-                user: socket.user.id,
-                role: "model",
-                text: result
-            })
-
+      const history = (
+        await messageModel.find({
+          chat: message.chat,
         })
+      ).map((message) =>
+        message.role === "user"
+          ? new HumanMessage(message.text)
+          : new AIMessage(message.text)
+      );
+      console.log(history);
+      const result = await aiService.generateStream(history, (text) => {
+        socket.emit("ai-response", {
+          _id: messageId,
+          chat: message.chat,
+          text,
+        });
+      });
 
+      await messageModel.create({
+        chat: message.chat,
+        user: socket.user.id,
+        role: "model",
+        text: result,
+      });
+    });
 
-        /* 
+    /* 
 
         find = [{
         
@@ -105,10 +99,10 @@ function initSocket(httpServer) {
         
         */
 
-        socket.on("disconnect", () => {
-            console.log("A user disconnected")
-        })
-    })
+    socket.on("disconnect", () => {
+      console.log("A user disconnected");
+    });
+  });
 }
 
-module.exports = initSocket
+module.exports = initSocket;
