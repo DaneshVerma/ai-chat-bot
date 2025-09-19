@@ -59,15 +59,13 @@ async function generateResult(prompt) {
 }
 
 async function generateStream(prompt, onData) {
-  const stream = await agent.stream(prompt);
+  const stream = await agent.stream(prompt, { streamMode: "messages" });
   let result = "";
   for await (const chunk of stream) {
-    const newText = chunk.ai.messages[0].text.slice(result.length);
-    result = chunk.ai.messages[0].text;
-    onData(newText);
+    result += chunk[0].text;
+    onData(chunk[0].text);
   }
   return result;
-
 }
 
 module.exports = {
