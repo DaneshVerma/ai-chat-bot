@@ -58,14 +58,16 @@ function initSocket(httpServer) {
           ? new HumanMessage(message.text)
           : new AIMessage(message.text)
       );
-      console.log(history);
-      const result = await aiService.generateStream(history, (text) => {
-        socket.emit("ai-response", {
-          _id: messageId,
-          chat: message.chat,
-          text,
-        });
-      });
+      const result = await aiService.generateStream(
+        { messages: history },
+        (text) => {
+          socket.emit("ai-response", {
+            _id: messageId,
+            chat: message.chat,
+            text,
+          });
+        }
+      );
 
       await messageModel.create({
         chat: message.chat,
@@ -74,31 +76,7 @@ function initSocket(httpServer) {
         text: result,
       });
     });
-
-    /* 
-
-        find = [{
-        
-        chat: "chatId",
-        user: "userId",
-        role: "user",
-        text: "Hello"
-        
-        }]
-        
-        memory = [
-        {
-            role: "user",
-            parts: [
-                {
-                    text: "Hello"
-                }
-            ]
-        }
-        ]
-        
-        */
-
+    
     socket.on("disconnect", () => {
       console.log("A user disconnected");
     });
