@@ -3,69 +3,54 @@ import "./Home.css";
 import axios from "axios";
 import { io } from "socket.io-client";
 
-// Simple ID generator
-let msgCounter = 0;
-
 export default function Home() {
   const [chats, setChats] = useState([]);
   const [socket, setSocket] = useState(null);
-  const [lastMessage, setLastMessage] = useState({ _id: null, text: "" });
 
-  const [messages, setMessages] = useState([]); // All messages
-  const [activeChatMessages, setActiveChatMessages] = useState([]); // Messages for the active chat
-
+  const [messages, setMessages] = useState([]); // all messages across chats
   const [activeChatId, setActiveChatId] = useState(null);
+
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
+
   const textareaRef = useRef(null);
   const scrollRef = useRef(null);
 
-  const activeChat = chats.find((c) => c.id === activeChatId);
+  const activeChat = chats.find((c) => c._id === activeChatId);
 
+  // === Create Chat ===
   function createChat() {
     const chatTitle = prompt("Enter chat title:");
+    if (!chatTitle) return;
 
     axios
       .post(
         "http://localhost:3000/api/chats",
-        {
-          title: chatTitle,
-        },
+        { title: chatTitle },
         { withCredentials: true }
       )
       .then((res) => {
         setChats((prev) => [res.data.chat, ...prev]);
-      });
+      })
+      .catch((err) => console.error("Error creating chat:", err));
   }
 
-  function updateActiveTitle(firstUserMessage) {
-    if (!firstUserMessage) return;
-    setChats((prev) =>
-      prev.map((c) =>
-        c.id === activeChatId
-          ? { ...c, title: truncate(firstUserMessage, 26) }
-          : c
-      )
-    );
-  }
-
-  function truncate(str, max) {
-    return str.length > max ? str.slice(0, max - 1) + "…" : str;
-  }
-
-  const addMessage = (role, content, _id) => {
-    setMessages((prev) => {
-      return [...prev, { role, content, _id }];
-    });
+  // === Add message helper ===
+  const addMessage = (role, content, _id, chatId = activeChatId) => {
+    const newMsg = { role, content, _id, chat: chatId };
+    setMessages((prev) => [...prev, newMsg]);
   };
 
-  async function handleSend() {
+  // === Handle Send ===
+  function handleSend() {
     const trimmed = input.trim();
     if (!trimmed || isThinking) return;
 
     addMessage("user", trimmed);
 
     socket.emit("ai-message", { chat: activeChatId, text: trimmed });
+
+    setInput("");
   }
 
   // Auto-resize textarea
@@ -80,59 +65,42 @@ export default function Home() {
   useEffect(() => {
     const container = scrollRef.current;
     if (container) container.scrollTop = container.scrollHeight;
-  }, [activeChatMessages.length, isThinking]); // Use activeChatMessages.length
+  }, [messages, isThinking]);
 
+  // === Fetch chats ===
   useEffect(() => {
     axios
       .get("http://localhost:3000/api/chats", { withCredentials: true })
-      .then((res) => {
-        setChats(res.data.chats);
-      });
+      .then((res) => setChats(res.data.chats))
+      .catch((err) => console.error("Error fetching chats:", err));
   }, []);
 
+  // === Setup Socket ===
   useEffect(() => {
     const newSocket = io("http://localhost:3000", { withCredentials: true });
 
     newSocket.on("ai-response", (data) => {
-      console.log(data, lastMessage);
-      setLastMessage((prevMessage) => {
-        if (prevMessage._id === data._id) {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m._id === data._id
-                ? {
-                    _id: data._id,
-                    content: m.content + data.text,
-                  }
-                : m
-            )
+      setMessages((prev) => {
+        // If last message is same _id, append text
+        if (prev[prev.length - 1]?._id === data._id) {
+          return prev.map((m) =>
+            m._id === data._id ? { ...m, content: m.content + data.text } : m
           );
-          return { _id: data._id, text: prevMessage.text + data.text };
-        } else {
-          setMessages((prev) => {
-            if (prev[prev.length - 1]?._id === data._id) {
-              return prev.map((m) =>
-                m._id === data._id
-                  ? {
-                      _id: data._id,
-                      content: m.content + data.text,
-                    }
-                  : m
-              );
-            }
-            return [
-              ...prev,
-              { _id: data._id, role: "model", content: data.text },
-            ];
-          });
-          return { _id: data._id, text: data.text };
         }
+        // Otherwise push new one
+        return [
+          ...prev,
+          { _id: data._id, role: "model", content: data.text, chat: data.chat },
+        ];
       });
     });
 
     setSocket(newSocket);
+
+    return () => newSocket.disconnect();
   }, []);
 
+  // Handle Enter key
   function handleKey(e) {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
@@ -140,14 +108,24 @@ export default function Home() {
     }
   }
 
-  // Function to fetch messages for a chat
+  // === Fetch messages for chat ===
   const fetchChatMessages = async (chatId) => {
     try {
       const response = await axios.get(
         `http://localhost:3000/api/chats/${chatId}/messages`,
         { withCredentials: true }
       );
-      setActiveChatMessages(response.data.messages);
+      // Normalize: convert "text" to "content"
+      const normalized = response.data.messages.map((m) => ({
+        _id: m._id,
+        chat: chatId,
+        role: m.role,
+        content: m.text,
+      }));
+      setMessages((prev) => [
+        ...prev.filter((msg) => msg.chat !== chatId),
+        ...normalized,
+      ]);
     } catch (error) {
       console.error("Error fetching chat messages:", error);
     }
@@ -155,6 +133,7 @@ export default function Home() {
 
   return (
     <div className='home-root'>
+      {/* === Sidebar === */}
       <aside className='chat-sidebar'>
         <div className='sidebar-header'>Chats</div>
         <button className='new-chat-btn' onClick={createChat}>
@@ -169,7 +148,7 @@ export default function Home() {
               }`}
               onClick={() => {
                 setActiveChatId(chat._id);
-                fetchChatMessages(chat._id); // Fetch messages on click
+                fetchChatMessages(chat._id);
               }}
             >
               <span style={{ flex: 1 }}>{chat.title}</span>
@@ -178,24 +157,24 @@ export default function Home() {
         </div>
         <div className='sidebar-footer'>Demo chat UI • Local state only</div>
       </aside>
+
+      {/* === Chat Main === */}
       <main className='chat-main'>
         <div className='chat-scroll' ref={scrollRef}>
-          {activeChatMessages.map(
-            (
-              msg // Use activeChatMessages
-            ) => (
+          {messages
+            .filter((m) => m.chat === activeChatId)
+            .map((msg) => (
               <div
-                key={msg._id} // Changed from msg.id to msg._id
+                key={msg._id}
                 className={`chat-message ${
                   msg.role === "user" ? "user-message" : "ai-message"
                 }`}
               >
                 <div className='message-content'>
-                  <p>{msg.text}</p> {/* Changed from msg.content to msg.text */}
+                  <p>{msg.content}</p>
                 </div>
               </div>
-            )
-          )}
+            ))}
         </div>
 
         {activeChatId && (
