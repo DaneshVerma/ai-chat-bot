@@ -13,7 +13,12 @@ const ai = new ChatGoogleGenerativeAI({
 
 const searchTool = tool(
   async ({ input = "" }) => {
-    const result = await tavily.search(input);
+    console.log(input);
+    const search = tavily({
+      apiKey: process.env.TAVILY_API_KEY,
+    });
+    const result = await search.search(input);
+    console.log(result);
     return result.results;
   },
   {
@@ -36,7 +41,7 @@ const graph = new StateGraph(MessagesAnnotation)
     const lastMessage = state.messages[state.messages.length - 1];
     if (lastMessage.tool_calls.length === 0) return state;
     const toolCall = lastMessage.tool_calls[0];
-    const toolResult = searchTool.invoke(toolCall.args);
+    const toolResult = await searchTool.invoke(toolCall.args);
     const toolMessage = new ToolMessage({
       name: toolCall.name,
       content: JSON.stringify(toolResult),
