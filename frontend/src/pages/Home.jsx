@@ -166,12 +166,27 @@ export default function Home() {
             .map((msg) => (
               <div
                 key={msg._id}
-                className={`chat-message ${
-                  msg.role === "user" ? "user-message" : "ai-message"
+                className={`message-block ${
+                  msg.role === "user" ? "user" : "ai"
                 }`}
               >
-                <div className='message-content'>
+                {/* Avatar */}
+                <div
+                  className={`avatar ${msg.role === "user" ? "user" : "ai"}`}
+                >
+                  {msg.role === "user" ? "U" : "AI"}
+                </div>
+
+                {/* Message content */}
+                <div
+                  className={`message-content ${
+                    msg.role === "user" ? "user" : "ai"
+                  }`}
+                >
                   <p>{msg.content}</p>
+                  <div className='message-meta'>
+                    {msg.role === "user" ? "You" : "AI"}
+                  </div>
                 </div>
               </div>
             ))}
