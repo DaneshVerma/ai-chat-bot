@@ -24,11 +24,7 @@ export default function Home() {
     if (!chatTitle) return;
 
     axios
-      .post(
-        "http://localhost:3000/api/chats",
-        { title: chatTitle },
-        { withCredentials: true }
-      )
+      .post("/api/chats", { title: chatTitle }, { withCredentials: true })
       .then((res) => {
         setChats((prev) => [res.data.chat, ...prev]);
       })
@@ -70,14 +66,14 @@ export default function Home() {
   // === Fetch chats ===
   useEffect(() => {
     axios
-      .get("http://localhost:3000/api/chats", { withCredentials: true })
+      .get("/api/chats", { withCredentials: true })
       .then((res) => setChats(res.data.chats))
       .catch((err) => console.error("Error fetching chats:", err));
   }, []);
 
   // === Setup Socket ===
   useEffect(() => {
-    const newSocket = io("http://localhost:3000", { withCredentials: true });
+    const newSocket = io("/", { withCredentials: true });
 
     newSocket.on("ai-response", (data) => {
       setMessages((prev) => {
@@ -111,10 +107,9 @@ export default function Home() {
   // === Fetch messages for chat ===
   const fetchChatMessages = async (chatId) => {
     try {
-      const response = await axios.get(
-        `http://localhost:3000/api/chats/${chatId}/messages`,
-        { withCredentials: true }
-      );
+      const response = await axios.get(`/api/chats/${chatId}/messages`, {
+        withCredentials: true,
+      });
       // Normalize: convert "text" to "content"
       const normalized = response.data.messages.map((m) => ({
         _id: m._id,
