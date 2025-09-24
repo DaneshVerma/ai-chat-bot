@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import "./Home.css";
 import axios from "axios";
 import { io } from "socket.io-client";
@@ -15,6 +16,11 @@ export default function Home() {
 
   const textareaRef = useRef(null);
   const scrollRef = useRef(null);
+  const navigate = useNavigate();
+
+  // Mobile sidebar state
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 860 : false);
 
   const activeChat = chats.find((c) => c._id === activeChatId);
 
@@ -30,6 +36,17 @@ export default function Home() {
       })
       .catch((err) => console.error("Error creating chat:", err));
   }
+
+  // === Logout ===
+  const handleLogout = async () => {
+    try {
+      await axios.post("/api/auth/logout", {}, { withCredentials: true });
+    } catch (e) {
+      // ignore errors; still navigate away
+    } finally {
+      navigate("/login", { replace: true });
+    }
+  };
 
   // === Add message helper ===
   const addMessage = (role, content, _id, chatId = activeChatId) => {
@@ -70,6 +87,19 @@ export default function Home() {
       setTimeout(() => textareaRef.current?.focus(), 0);
     }
   }, [activeChatId]);
+
+  // Ensure sidebar state doesn't leak into desktop view and track isMobile
+  useEffect(() => {
+    const onResize = () => {
+      const mobile = window.innerWidth <= 860;
+      setIsMobile(mobile);
+      if (!mobile) setIsSidebarOpen(false);
+    };
+    window.addEventListener('resize', onResize);
+    // call once on mount
+    onResize();
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
 
   // === Fetch chats ===
   useEffect(() => {
@@ -136,33 +166,54 @@ export default function Home() {
 
   return (
     <div className='home-root'>
-      {/* === Sidebar === */}
-      <aside className='chat-sidebar'>
-        <div className='sidebar-header'>Chats</div>
-        <button className='new-chat-btn' onClick={createChat}>
-          + New Chat
+      {/* === Topbar (visible on mobile) === */}
+      <header className='topbar'>
+        <button
+          className='icon-btn menu-btn'
+          aria-label='Open menu'
+          onClick={() => setIsSidebarOpen(true)}
+        >
+          ☰
         </button>
-        <div className='chat-list'>
-          {chats.map((chat) => (
-            <button
-              key={chat._id}
-              className={`chat-item ${
-                chat._id === activeChatId ? "active" : ""
-              }`}
-              onClick={() => {
-                setActiveChatId(chat._id);
-                fetchChatMessages(chat._id);
-              }}
-            >
-              <span style={{ flex: 1 }}>{chat.title}</span>
-            </button>
-          ))}
-        </div>
-        <div className='sidebar-footer'>Demo chat UI • Local state only</div>
-      </aside>
+        <div className='topbar-title'>ToolLiteAi</div>
+        <button className='logout-btn' onClick={handleLogout}>Logout</button>
+      </header>
+      <div className='content'>
+        {/* === Sidebar === */}
+        <aside className={`chat-sidebar ${isSidebarOpen ? "open" : ""}`}>
+          <div className='sidebar-header'>
+            <span>Chats</span>
+            <button className='sidebar-logout-btn' onClick={handleLogout}>Logout</button>
+          </div>
+          <button className='new-chat-btn' onClick={createChat}>
+            + New Chat
+          </button>
+          <div className='chat-list'>
+            {chats.map((chat) => (
+              <button
+                key={chat._id}
+                className={`chat-item ${
+                  chat._id === activeChatId ? "active" : ""
+                }`}
+                onClick={() => {
+                  setActiveChatId(chat._id);
+                  fetchChatMessages(chat._id);
+                  setIsSidebarOpen(false);
+                }}
+              >
+                <span style={{ flex: 1 }}>{chat.title}</span>
+              </button>
+            ))}
+          </div>
+          <div className='sidebar-footer'>Demo chat UI • Local state only</div>
+        </aside>
+        {/* Backdrop for mobile sidebar */}
+        {isMobile && isSidebarOpen && (
+          <div className='sidebar-backdrop' onClick={() => setIsSidebarOpen(false)} />
+        )}
 
-      {/* === Chat Main === */}
-      <main className='chat-main'>
+        {/* === Chat Main === */}
+        <main className='chat-main'>
         {!activeChatId ? (
           <div className='empty-state'>
             <h1>ToolLiteAi</h1>
@@ -233,7 +284,8 @@ export default function Home() {
             </div>
           </>
         )}
-      </main>
+        </main>
+      </div>
     </div>
   );
 }

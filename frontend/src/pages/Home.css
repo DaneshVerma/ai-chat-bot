@@ -1,6 +1,7 @@
 /* === Root Layout === */
 .home-root {
   display: flex;
+  flex-direction: column; /* topbar above content */
   width: 100%;
   min-height: 100dvh;
   background: var(--color-bg);
@@ -8,15 +9,71 @@
   overflow: hidden; /* prevent double scroll */
 }
 
+/* Content row: sidebar + main */
+.content {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0; /* allow inner scroll areas to size */
+  height: 100dvh; /* desktop: full viewport height for layout */
+}
+
+/* === Topbar (mobile) === */
+.topbar {
+  position: sticky;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: none; /* hidden on desktop */
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+.topbar-title {
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+.icon-btn {
+  background: var(--color-surface-alt);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
+}
+.logout-btn {
+  margin-left: auto;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+}
+
 /* === Sidebar (independent scroll) === */
 .chat-sidebar {
   width: 250px;
+  flex: 0 0 250px; /* fixed width, don't shrink */
   background: var(--color-surface);
   border-right: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   overflow-y: auto; /* only sidebar scrolls */
-  height: 100vh;
+  height: auto; /* inherit from container */
+  max-height: 100%;
+}
+
+/* Sidebar header with desktop logout */
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.sidebar-logout-btn {
+  background: transparent;
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-md);
 }
 
 /* Sidebar content styles */
@@ -86,17 +143,19 @@
 
 /* === Main Area === */
 .chat-main {
-  flex: 1;
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   position: relative;
-  height: 100vh;
+  min-height: 0; /* so .chat-scroll can scroll */
   overflow: hidden; /* isolate chat scroll */
+  min-width: 0; /* prevent overflow pushing layout */
 }
 
 /* === Scrollable Messages === */
 .chat-scroll {
-  flex: 1;
+  flex: 1 1 auto;
+  min-height: 0; /* allow to shrink and scroll */
   overflow-y: auto; /* messages scroll independently */
   padding: calc(var(--space-8) + 10px) var(--space-6) var(--space-6);
   display: flex;
@@ -176,12 +235,10 @@
 
 /* === Input Area === */
 .chat-input-bar {
-  position: sticky;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  position: relative; /* keep in normal flow so it always stays visible */
   padding: var(--space-4) var(--space-6);
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, var(--color-bg) 60%);
+  background: var(--color-bg);
+  border-top: 1px solid var(--color-border);
   display: flex;
   flex-direction: column;
   gap: var(--space-3);
@@ -269,8 +326,28 @@
 
 /* === Responsive === */
 @media (max-width: 860px) {
+  .topbar { display: flex; }
+  .content { height: calc(100dvh - var(--topbar-h)); min-height: 0; }
+  .chat-main { height: calc(100dvh - var(--topbar-h)); }
+  /* Off-canvas sidebar */
   .chat-sidebar {
-    display: none;
+    position: fixed;
+    inset: 0 auto 0 0;
+    transform: translateX(-100%);
+    transition: transform var(--transition-base);
+    width: min(80vw, 320px);
+    height: 100dvh;
+    z-index: 40;
+  }
+  .chat-sidebar.open {
+    transform: translateX(0);
+  }
+  .sidebar-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    backdrop-filter: blur(1px);
+    z-index: 35;
   }
   .chat-scroll {
     padding: calc(var(--space-8) + 10px) var(--space-4) var(--space-6);
@@ -278,6 +355,8 @@
   .chat-input-bar {
     padding: var(--space-4) var(--space-4);
   }
+  /* Hide desktop logout inside sidebar on mobile; use topbar logout */
+  .sidebar-logout-btn { display: none; }
 }
 
 /* Small phones */

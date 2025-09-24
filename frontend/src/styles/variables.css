@@ -47,6 +47,8 @@
 
   /* Layout max widths */
   --max-content-width: 420px;
+  /* Component sizes */
+  --topbar-h: 56px;
 }
 
 @media (prefers-color-scheme: light) {
