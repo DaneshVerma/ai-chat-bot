@@ -36,7 +36,7 @@
 }
 
 .form-card {
-  background: linear-gradient(145deg, var(--color-surface), var(--color-surface-alt));
+  background: linear-gradient(160deg, var(--color-surface), var(--color-surface-alt));
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
   padding: var(--space-6) var(--space-5) var(--space-6);
@@ -94,7 +94,7 @@
 
 .input-shell input:focus {
   border-color: var(--color-border-accent);
-  box-shadow: 0 0 0 2px rgba(59,130,246,0.35);
+  box-shadow: 0 0 0 3px color-mix(in oklab, var(--color-primary) 30%, transparent);
 }
 
 .password-toggle {
@@ -111,7 +111,7 @@
   border-radius: var(--radius-sm);
   transition: color var(--transition-fast), background var(--transition-fast);
 }
-.password-toggle:hover { color: var(--color-text); }
+.password-toggle:hover { color: var(--color-text); background: color-mix(in oklab, var(--color-primary) 12%, transparent); }
 .password-toggle:focus-visible { outline: 2px solid var(--color-focus-ring); }
 
 .actions {
@@ -124,7 +124,7 @@
   appearance: none;
   border: none;
   border-radius: var(--radius-md);
-  background: var(--color-primary);
+  background: linear-gradient(135deg, color-mix(in oklab, var(--color-primary) 92%, #000), var(--color-primary-hover));
   color: #fff;
   font-weight: 600;
   font-size: var(--font-size-base);
@@ -134,10 +134,10 @@
   align-items: center;
   justify-content: center;
   gap: var(--space-2);
-  box-shadow: var(--shadow-sm);
-  transition: background var(--transition-fast), transform var(--transition-fast), box-shadow var(--transition-fast);
+  box-shadow: 0 6px 18px color-mix(in oklab, var(--color-primary) 30%, transparent);
+  transition: transform var(--transition-fast), box-shadow var(--transition-fast), filter var(--transition-fast);
 }
-.submit-btn:hover { background: var(--color-primary-hover); }
+.submit-btn:hover { filter: brightness(1.02); box-shadow: 0 10px 24px color-mix(in oklab, var(--color-primary) 40%, transparent); }
 .submit-btn:active { transform: translateY(1px); }
 .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 

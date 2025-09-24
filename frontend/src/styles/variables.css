@@ -1,16 +1,16 @@
 :root {
   /* Color palette */
-  --color-bg: #0f1115;
-  --color-surface: #181b21;
-  --color-surface-alt: #1f232a;
-  --color-border: #2a2f39;
-  --color-border-accent: #3a82f7;
-  --color-text: #f5f7fa;
-  --color-text-dim: #a0acbd;
-  --color-primary: #3b82f6;
-  --color-primary-hover: #2563eb;
-  --color-danger: #ef4444;
-  --color-focus-ring: #60a5fa;
+  --color-bg: #0b0f14; /* deep slate */
+  --color-surface: #121820; /* card base */
+  --color-surface-alt: #161e28; /* inputs/alt cards */
+  --color-border: #223042; /* subtle border */
+  --color-border-accent: #8b5cf6; /* matches primary */
+  --color-text: #e8eef6; /* high contrast on dark */
+  --color-text-dim: #9bb2c9; /* muted text */
+  --color-primary: #8b5cf6; /* violet */
+  --color-primary-hover: #7c3aed; /* darker violet */
+  --color-danger: #f43f5e; /* rose */
+  --color-focus-ring: #a78bfa; /* soft violet ring */
 
   /* Typography */
   --font-stack: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
@@ -38,8 +38,8 @@
   --radius-pill: 999px;
 
   /* Shadows */
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.4);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.45);
+  --shadow-sm: 0 1px 2px rgba(3, 7, 18, 0.5);
+  --shadow-md: 0 10px 30px rgba(3, 7, 18, 0.45);
 
   /* Transitions */
   --transition-fast: 120ms cubic-bezier(.4,0,.2,1);
@@ -53,18 +53,18 @@
 
 @media (prefers-color-scheme: light) {
   :root {
-    --color-bg: #f5f7fb;
+    --color-bg: #f4f7fb; /* soft light */
     --color-surface: #ffffff;
-    --color-surface-alt: #f0f3f8;
-    --color-border: #d8dee6;
-    --color-border-accent: #3a82f7;
-    --color-text: #1d2734;
-    --color-text-dim: #5b6673;
-    --color-primary: #2563eb;
-    --color-primary-hover: #1d4ed8;
-    --color-danger: #dc2626;
-    --color-focus-ring: #3b82f6;
-    --shadow-sm: 0 1px 2px rgba(0,0,0,0.08);
-    --shadow-md: 0 4px 16px rgba(0,0,0,0.12);
+    --color-surface-alt: #eef2f8;
+    --color-border: #d6deea;
+    --color-border-accent: #7c3aed;
+    --color-text: #121826;
+    --color-text-dim: #516277;
+    --color-primary: #7c3aed;
+    --color-primary-hover: #6d28d9;
+    --color-danger: #e11d48;
+    --color-focus-ring: #8b5cf6;
+    --shadow-sm: 0 1px 2px rgba(2, 6, 23, 0.08);
+    --shadow-md: 0 10px 30px rgba(2, 6, 23, 0.12);
   }
 }

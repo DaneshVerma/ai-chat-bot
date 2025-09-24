@@ -197,10 +197,10 @@
   flex-shrink: 0;
 }
 .avatar.ai {
-  background: linear-gradient(135deg, #10b981, #059669);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-primary-hover));
 }
 .avatar.user {
-  background: linear-gradient(135deg, #6366f1, #3b82f6);
+  background: linear-gradient(135deg, var(--color-border-accent), var(--color-primary));
 }
 
 /* === Message Content === */
