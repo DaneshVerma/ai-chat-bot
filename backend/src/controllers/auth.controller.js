@@ -114,8 +114,36 @@ async function logout(req, res) {
 
 }
 
+// Return the currently authenticated user's info
+async function me(req, res) {
+    // req.user is set by auth.middleware.js after verifying JWT
+    const { id, role } = req.user || {};
+
+    if (!id) {
+        return res.status(401).json({ message: "Unauthorized" });
+    }
+
+    // Optionally fetch user details from DB, excluding password
+    const user = await userModel.findById(id).select("username email fullName role");
+
+    if (!user) {
+        return res.status(404).json({ message: "User not found" });
+    }
+
+    return res.status(200).json({
+        user: {
+            id: user._id,
+            username: user.username,
+            email: user.email,
+            fullName: user.fullName,
+            role: user.role,
+        },
+    });
+}
+
 module.exports = {
     registerUser,
     loginUser,
-    logout
+    logout,
+    me
 }
