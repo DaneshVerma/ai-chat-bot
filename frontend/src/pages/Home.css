@@ -249,6 +249,22 @@
   padding: var(--space-8) var(--space-4);
   color: var(--color-text-dim);
   font-size: var(--font-size-sm);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+}
+.empty-state h1 {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text);
+  font-size: clamp(1.5rem, 2.5vw + 1rem, 2.5rem);
+  letter-spacing: 0.3px;
+}
+.empty-state p {
+  margin: 0 auto;
+  max-width: 60ch;
 }
 
 /* === Responsive === */
@@ -261,5 +277,15 @@
   }
   .chat-input-bar {
     padding: var(--space-4) var(--space-4);
+  }
+}
+
+/* Small phones */
+@media (max-width: 480px) {
+  .message-block {
+    max-width: 100%;
+  }
+  .empty-state {
+    padding: var(--space-6) var(--space-4);
   }
 }
