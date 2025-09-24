@@ -73,7 +73,7 @@ export default function Home() {
 
   // === Setup Socket ===
   useEffect(() => {
-    const newSocket = io("/", { withCredentials: true });
+    const newSocket = io({ withCredentials: true });
 
     newSocket.on("ai-response", (data) => {
       setMessages((prev) => {
