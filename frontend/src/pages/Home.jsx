@@ -3,6 +3,9 @@ import { useNavigate } from "react-router-dom";
 import "./Home.css";
 import axios from "axios";
 import { io } from "socket.io-client";
+import Topbar from "../components/Topbar.jsx";
+import Sidebar from "../components/Sidebar.jsx";
+import ChatMain from "../components/ChatMain.jsx";
 
 export default function Home() {
   const [chats, setChats] = useState([]);
@@ -167,124 +170,38 @@ export default function Home() {
   return (
     <div className='home-root'>
       {/* === Topbar (visible on mobile) === */}
-      <header className='topbar'>
-        <button
-          className='icon-btn menu-btn'
-          aria-label='Open menu'
-          onClick={() => setIsSidebarOpen(true)}
-        >
-          ☰
-        </button>
-        <div className='topbar-title'>ToolLiteAi</div>
-        <button className='logout-btn' onClick={handleLogout}>Logout</button>
-      </header>
+      <Topbar onMenuClick={() => setIsSidebarOpen(true)} onLogout={handleLogout} />
       <div className='content'>
         {/* === Sidebar === */}
-        <aside className={`chat-sidebar ${isSidebarOpen ? "open" : ""}`}>
-          <div className='sidebar-header'>
-            <span>Chats</span>
-            <button className='sidebar-logout-btn' onClick={handleLogout}>Logout</button>
-          </div>
-          <button className='new-chat-btn' onClick={createChat}>
-            + New Chat
-          </button>
-          <div className='chat-list'>
-            {chats.map((chat) => (
-              <button
-                key={chat._id}
-                className={`chat-item ${
-                  chat._id === activeChatId ? "active" : ""
-                }`}
-                onClick={() => {
-                  setActiveChatId(chat._id);
-                  fetchChatMessages(chat._id);
-                  setIsSidebarOpen(false);
-                }}
-              >
-                <span style={{ flex: 1 }}>{chat.title}</span>
-              </button>
-            ))}
-          </div>
-          <div className='sidebar-footer'>Demo chat UI • Local state only</div>
-        </aside>
+        <Sidebar
+          chats={chats}
+          activeChatId={activeChatId}
+          isOpen={isSidebarOpen}
+          onCreateChat={createChat}
+          onLogout={handleLogout}
+          onSelectChat={(id) => {
+            setActiveChatId(id);
+            fetchChatMessages(id);
+            setIsSidebarOpen(false);
+          }}
+        />
         {/* Backdrop for mobile sidebar */}
         {isMobile && isSidebarOpen && (
           <div className='sidebar-backdrop' onClick={() => setIsSidebarOpen(false)} />
         )}
 
         {/* === Chat Main === */}
-        <main className='chat-main'>
-        {!activeChatId ? (
-          <div className='empty-state'>
-            <h1>ToolLiteAi</h1>
-            <p>
-              Select a chat from the left sidebar or start a new one to begin your
-              conversation. Your messages will appear here.
-            </p>
-            <p style={{ marginTop: 'var(--space-4)', fontSize: 'var(--font-size-xs)' }}>
-              Tip: Press Enter to send and Shift+Enter for a new line.
-            </p>
-          </div>
-        ) : (
-          <>
-            <div className='chat-scroll' ref={scrollRef}>
-              {messages
-                .filter((m) => m.chat === activeChatId)
-                .map((msg) => (
-                  <div
-                    key={msg._id}
-                    className={`message-block ${
-                      msg.role === "user" ? "user" : "ai"
-                    }`}
-                  >
-                    {/* Avatar */}
-                    <div
-                      className={`avatar ${msg.role === "user" ? "user" : "ai"}`}
-                    >
-                      {msg.role === "user" ? "U" : "AI"}
-                    </div>
-
-                    {/* Message content */}
-                    <div
-                      className={`message-content ${
-                        msg.role === "user" ? "user" : "ai"
-                      }`}
-                    >
-                      <p>{msg.content}</p>
-                      <div className='message-meta'>
-                        {msg.role === "user" ? "You" : "AI"}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-            </div>
-
-            <div className='chat-input-bar'>
-              <div className='input-shell-wide'>
-                <textarea
-                  ref={textareaRef}
-                  className='chat-textarea'
-                  placeholder='Message...'
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKey}
-                  rows={1}
-                />
-                <button
-                  className='send-btn'
-                  disabled={!input.trim() || isThinking}
-                  onClick={handleSend}
-                >
-                  Send
-                </button>
-              </div>
-              <div className='token-hint'>
-                Enter to send • Shift+Enter = newline
-              </div>
-            </div>
-          </>
-        )}
-        </main>
+        <ChatMain
+          activeChatId={activeChatId}
+          messages={messages}
+          input={input}
+          setInput={setInput}
+          onSend={handleSend}
+          onKeyDown={handleKey}
+          textareaRef={textareaRef}
+          scrollRef={scrollRef}
+          isThinking={isThinking}
+        />
       </div>
     </div>
   );
