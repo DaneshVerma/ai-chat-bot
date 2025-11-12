@@ -14,18 +14,24 @@ export default function Home() {
   const [messages, setMessages] = useState([]); // all messages across chats
   const [activeChatId, setActiveChatId] = useState(null);
 
+
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
 
   const textareaRef = useRef(null);
+  ``
   const scrollRef = useRef(null);
   const navigate = useNavigate();
 
   // Mobile sidebar state
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' ? window.innerWidth <= 860 : false);
+  const [isMobile, setIsMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth <= 860 : false
+  );
 
-  const activeChat = chats.find((c) => c._id === activeChatId);
+  const activeChat = Array.isArray(chats)
+    ? chats.find((c) => c && c._id === activeChatId)
+    : undefined;
 
   // === Create Chat ===
   function createChat() {
@@ -35,7 +41,12 @@ export default function Home() {
     axios
       .post("/api/chats", { title: chatTitle }, { withCredentials: true })
       .then((res) => {
-        setChats((prev) => [res.data.chat, ...prev]);
+        if (res.data.chat && res.data.chat._id) {
+          setChats((prev) => [
+            res.data.chat,
+            ...(Array.isArray(prev) ? prev : []),
+          ]);
+        }
       })
       .catch((err) => console.error("Error creating chat:", err));
   }
@@ -98,17 +109,22 @@ export default function Home() {
       setIsMobile(mobile);
       if (!mobile) setIsSidebarOpen(false);
     };
-    window.addEventListener('resize', onResize);
+    window.addEventListener("resize", onResize);
     // call once on mount
     onResize();
-    return () => window.removeEventListener('resize', onResize);
+    return () => window.removeEventListener("resize", onResize);
   }, []);
 
   // === Fetch chats ===
   useEffect(() => {
     axios
       .get("/api/chats", { withCredentials: true })
-      .then((res) => setChats(res.data.chats))
+      .then((res) => {
+        const validChats = (res.data.chats || []).filter(
+          (chat) => chat && chat._id
+        );
+        setChats(validChats);
+      })
       .catch((err) => console.error("Error fetching chats:", err));
   }, []);
 
@@ -170,7 +186,10 @@ export default function Home() {
   return (
     <div className='home-root'>
       {/* === Topbar (visible on mobile) === */}
-      <Topbar onMenuClick={() => setIsSidebarOpen(true)} onLogout={handleLogout} />
+      <Topbar
+        onMenuClick={() => setIsSidebarOpen(true)}
+        onLogout={handleLogout}
+      />
       <div className='content'>
         {/* === Sidebar === */}
         <Sidebar
@@ -187,7 +206,10 @@ export default function Home() {
         />
         {/* Backdrop for mobile sidebar */}
         {isMobile && isSidebarOpen && (
-          <div className='sidebar-backdrop' onClick={() => setIsSidebarOpen(false)} />
+          <div
+            className='sidebar-backdrop'
+            onClick={() => setIsSidebarOpen(false)}
+          />
         )}
 
         {/* === Chat Main === */}

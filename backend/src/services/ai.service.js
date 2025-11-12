@@ -3,7 +3,7 @@ const { tool } = require("@langchain/core/tools");
 const { tavily } = require("@tavily/core");
 const { z } = require("zod");
 const { StateGraph, MessagesAnnotation } = require("@langchain/langgraph");
-const { ToolMessage } = require("@langchain/core/messages");
+const { ToolMessage, isAIMessage } = require("@langchain/core/messages");
 
 const ai = new ChatGoogleGenerativeAI({
   model: "gemini-2.0-flash",
@@ -13,12 +13,10 @@ const ai = new ChatGoogleGenerativeAI({
 
 const searchTool = tool(
   async ({ input = "" }) => {
-    console.log(input);
     const search = tavily({
       apiKey: process.env.TAVILY_API_KEY,
     });
     const result = await search.search(input);
-    console.log(result);
     return result.results;
   },
   {
@@ -43,6 +41,7 @@ const graph = new StateGraph(MessagesAnnotation)
     const toolCall = lastMessage.tool_calls[0];
     const toolResult = await searchTool.invoke(toolCall.args);
     const toolMessage = new ToolMessage({
+      tool_call_id: toolCall.id,
       name: toolCall.name,
       content: JSON.stringify(toolResult),
     });
@@ -52,23 +51,35 @@ const graph = new StateGraph(MessagesAnnotation)
   .addEdge("Tool", "ai")
   .addConditionalEdges("ai", async (state) => {
     const lastMessage = state.messages[state.messages.length - 1];
-    return lastMessage.tool_calls.length > 0 ? "Tool" : "__end__";
+    if (lastMessage.tool_calls && lastMessage.tool_calls.length > 0) {
+      return "Tool";
+    }
+    // If no tool calls, we're done
+    return "__end__";
   });
 
 const agent = graph.compile();
 
 async function generateResult(prompt) {
   await agent.invoke(prompt).then((res) => {
-    return res.messages[0];
+    console.log("Agent invoke result:", res);
   });
 }
 
 async function generateStream(prompt, onData) {
   const stream = await agent.stream(prompt, { streamMode: "messages" });
+
   let result = "";
   for await (const chunk of stream) {
-    result += chunk[0].text;
-    onData(chunk[0].text);
+    console.log("Streaming text chunk:", chunk);
+    // Only process AI messages that have content
+    if (chunk && chunk[0] && isAIMessage(chunk[0])) {
+      const content = chunk[0].content;
+      if (content && typeof content === "string") {
+        result += content;
+        onData(content);
+      }
+    }
   }
   return result;
 }
