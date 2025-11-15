@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import "./Home.css";
-import axios from "axios";
+import axios from "../utils/axios";
 import { io } from "socket.io-client";
 import Topbar from "../components/Topbar.jsx";
 import Sidebar from "../components/Sidebar.jsx";
@@ -14,12 +14,11 @@ export default function Home() {
   const [messages, setMessages] = useState([]); // all messages across chats
   const [activeChatId, setActiveChatId] = useState(null);
 
-
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
 
   const textareaRef = useRef(null);
-  ``
+  ``;
   const scrollRef = useRef(null);
   const navigate = useNavigate();
 
@@ -39,7 +38,7 @@ export default function Home() {
     if (!chatTitle) return;
 
     axios
-      .post("/api/chats", { title: chatTitle }, { withCredentials: true })
+      .post("/api/chats", { title: chatTitle })
       .then((res) => {
         if (res.data.chat && res.data.chat._id) {
           setChats((prev) => [
@@ -54,7 +53,7 @@ export default function Home() {
   // === Logout ===
   const handleLogout = async () => {
     try {
-      await axios.post("/api/auth/logout", {}, { withCredentials: true });
+      await axios.post("/api/auth/logout");
     } catch (e) {
       // ignore errors; still navigate away
     } finally {
@@ -118,7 +117,7 @@ export default function Home() {
   // === Fetch chats ===
   useEffect(() => {
     axios
-      .get("/api/chats", { withCredentials: true })
+      .get("/api/chats")
       .then((res) => {
         const validChats = (res.data.chats || []).filter(
           (chat) => chat && chat._id
@@ -130,7 +129,25 @@ export default function Home() {
 
   // === Setup Socket ===
   useEffect(() => {
-    const newSocket = io({ withCredentials: true });
+    const newSocket = io({
+      withCredentials: true,
+      transports: ["websocket", "polling"],
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+    });
+
+    newSocket.on("connect", () => {
+      console.log("Socket connected:", newSocket.id);
+    });
+
+    newSocket.on("connect_error", (error) => {
+      console.error("Socket connection error:", error.message);
+    });
+
+    newSocket.on("disconnect", (reason) => {
+      console.log("Socket disconnected:", reason);
+    });
 
     newSocket.on("ai-response", (data) => {
       setMessages((prev) => {
@@ -150,7 +167,9 @@ export default function Home() {
 
     setSocket(newSocket);
 
-    return () => newSocket.disconnect();
+    return () => {
+      newSocket.disconnect();
+    };
   }, []);
 
   // Handle Enter key
@@ -164,9 +183,7 @@ export default function Home() {
   // === Fetch messages for chat ===
   const fetchChatMessages = async (chatId) => {
     try {
-      const response = await axios.get(`/api/chats/${chatId}/messages`, {
-        withCredentials: true,
-      });
+      const response = await axios.get(`/api/chats/${chatId}/messages`);
       // Normalize: convert "text" to "content"
       const normalized = response.data.messages.map((m) => ({
         _id: m._id,

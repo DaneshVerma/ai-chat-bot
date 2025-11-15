@@ -1,6 +1,6 @@
 import { useState, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "../utils/axios";
 import "./Login.css";
 
 export default function Login() {
@@ -48,16 +48,10 @@ export default function Login() {
     setError(null);
     setSuccess(false);
     try {
-      const res = await axios.post(
-        "/api/auth/login",
-        {
-          email: form.email,
-          password: form.password,
-        },
-        {
-          withCredentials: true,
-        }
-      );
+      const res = await axios.post("/api/auth/login", {
+        email: form.email,
+        password: form.password,
+      });
       if (res.status === 200) {
         setSuccess(true);
         navigate("/home");

@@ -71,7 +71,6 @@ async function generateStream(prompt, onData) {
 
   let result = "";
   for await (const chunk of stream) {
-    console.log("Streaming text chunk:", chunk);
     // Only process AI messages that have content
     if (chunk && chunk[0] && isAIMessage(chunk[0])) {
       const content = chunk[0].content;

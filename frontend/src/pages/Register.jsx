@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import "./Register.css";
 
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
+import axios from "../utils/axios";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -70,27 +70,27 @@ export default function Register() {
       password: true,
     });
     if (!isValid) return;
-    // Simulate submission
 
     axios
-      .post(
-        "/api/auth/register",
-        {
-          username: form.username,
-          email: form.email,
-          fullName: {
-            firstName: form.firstName,
-            lastName: form.lastName,
-          },
-          password: form.password,
+      .post("/api/auth/register", {
+        username: form.username,
+        email: form.email,
+        fullName: {
+          firstName: form.firstName,
+          lastName: form.lastName,
         },
-        {
-          withCredentials: true,
-        }
-      )
+        password: form.password,
+      })
       .then((response) => {
         console.log(response.data);
         navigate("/home");
+      })
+      .catch((error) => {
+        console.error(
+          "Registration error:",
+          error.response?.data || error.message
+        );
+        // You can set an error state here to display to the user
       });
   }
 

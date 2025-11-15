@@ -7,7 +7,14 @@ const { v4: uuidv4 } = require("uuid");
 const { HumanMessage, AIMessage } = require("@langchain/core/messages");
 
 function initSocket(httpServer) {
-  const io = new Server(httpServer);
+  const io = new Server(httpServer, {
+    cors: {
+      origin: process.env.FRONTEND_URL || "http://localhost:5173",
+      credentials: true,
+    },
+    pingTimeout: 60000,
+    pingInterval: 25000,
+  });
 
   io.use((socket, next) => {
     const cookies = socket.handshake.headers.cookie;
@@ -15,6 +22,7 @@ function initSocket(httpServer) {
     const { token } = cookies ? cookie.parse(cookies) : {};
 
     if (!token) {
+      console.log("Socket connection rejected: No token provided");
       return next(new Error("Authentication error"));
     }
 
@@ -25,20 +33,17 @@ function initSocket(httpServer) {
 
       next();
     } catch (err) {
+      console.log("Socket connection rejected: Invalid token");
       return next(new Error("Invalid token"));
     }
   });
 
   io.on("connection", (socket) => {
-    console.log("A user connected");
-
-    console.log(socket.user);
+    console.log("A user connected:", socket.user.id);
 
     socket.on("ai-message", async (message) => {
       try {
         const messageId = uuidv4();
-
-     
 
         // Validate message input
         if (!message || !message.text || !message.chat) {
